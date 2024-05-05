@@ -1,1 +1,1 @@
-# EJS BLOG
+# Event Management System
