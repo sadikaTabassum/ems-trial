@@ -52,6 +52,12 @@
                 >
                   Phone
                 </th>
+                <th
+                  scope="col"
+                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                >
+                  Rooms
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -92,6 +98,23 @@
                 >
                   <%= hotel.phone %>
                 </td>
+                <td
+                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
+                >
+                  <% if (hotel.has_rooms_assigned) { %>
+                  <button
+                    class="text-sm hover:bg-lime-700 hover:text-white px-2 border-2 border-lime-700 py-1 rounded-md bg-gray-100 text-lime-700"
+                  >
+                    <a href="/view-rooms/<%= hotel.hotel_id %>"> View Rooms </a>
+                  </button>
+                  <% } else { %>
+                  <button
+                    class="text-sm hover:bg-gray-700 hover:text-white px-2 border-2 border-gray-400 py-1 rounded-md bg-gray-100 text-gray-900"
+                  >
+                    <a href="/add-rooms/<%= hotel.hotel_id %>"> Add Rooms </a>
+                  </button>
+                  <% } %>
+                </td>
               </tr>
               <% } %>
             </tbody>
@@ -100,7 +123,9 @@
       </div>
     </div>
     <div class="mx-auto">
-      <button class="text-sm bg-gray-700 mt-6 text-white px-3 py-2 rounded-md">
+      <button
+        class="text-sm hover:bg-gray-700 mt-6 hover:text-white px-3 border-2 border-gray-400 py-2 rounded-md bg-gray-100 text-gray-900"
+      >
         <a href="/add-hotel"> Add Hotel </a>
       </button>
     </div>
