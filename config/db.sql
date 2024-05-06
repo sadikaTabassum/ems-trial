@@ -41,6 +41,38 @@ CREATE TABLE HOTEL (
     PHONE VARCHAR(30)
 );
 
+INSERT INTO HOTEL (
+    HOTEL_NAME,
+    HOTEL_ADDRESS,
+    STATE,
+    ZIP_CODE,
+    WEBSITE,
+    PHONE
+) VALUES (
+    'Hotel ABC',
+    '1234, ABC Street, XYZ City',
+    'Maryland',
+    '21201',
+    'www.hotelabc.com',
+    '+1 123-456 (7890)'
+),
+(
+    'Hotel XYZ',
+    '5678, XYZ Street, ABC City',
+    'Maryland',
+    '21202',
+    'www.hotelxyz.com',
+    '+1 098-765 (4321)'
+),
+(
+    'Hotel PQR',
+    '9876, PQR Street, XYZ City',
+    'Maryland',
+    '21203',
+    'www.hotelpqr.com',
+    '+1 234-567 (8901)'
+);
+
 --------------------------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE ROOM_TYPE (
     ROOM_ID SERIAL PRIMARY KEY,

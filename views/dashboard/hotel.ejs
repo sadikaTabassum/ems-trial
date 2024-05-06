@@ -1,0 +1,110 @@
+<%- include('../partials/header.ejs') %> <%- include('../partials/navbar.ejs')
+%>
+
+<section class="h-lvh">
+  <h2 class="text-2xl mb-4 px-12">All Hotels</h2>
+  <div class="flex flex-col">
+    <div class="overflow-x-auto sm:mx-0.5 lg:mx-0.5">
+      <div class="py-2 inline-block min-w-full sm:px-6 lg:px-8">
+        <div class="overflow-hidden shadow-lg rounded-xl">
+          <table class="min-w-full table-auto">
+            <thead class="border-b">
+              <tr>
+                <th
+                  scope="col"
+                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                >
+                  #
+                </th>
+                <th
+                  scope="col"
+                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                >
+                  Hotel Name
+                </th>
+                <th
+                  scope="col"
+                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                >
+                  Address
+                </th>
+                <th
+                  scope="col"
+                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                >
+                  State
+                </th>
+                <th
+                  scope="col"
+                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                >
+                  Zip Code
+                </th>
+                <th
+                  scope="col"
+                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                >
+                  Website
+                </th>
+                <th
+                  scope="col"
+                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                >
+                  Phone
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <% for(let hotel of hotels) { %>
+              <tr class="border-b">
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                >
+                  <%= hotel.hotel_id %>
+                </td>
+                <td
+                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
+                >
+                  <%= hotel.hotel_name %>
+                </td>
+                <td
+                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
+                >
+                  <%= hotel.hotel_address %>
+                </td>
+                <td
+                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
+                >
+                  <%= hotel.state %>
+                </td>
+                <td
+                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
+                >
+                  <%= hotel.zip_code %>
+                </td>
+                <td
+                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
+                >
+                  <%= hotel.website %>
+                </td>
+                <td
+                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
+                >
+                  <%= hotel.phone %>
+                </td>
+              </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="mx-auto">
+      <button class="text-sm bg-gray-700 mt-6 text-white px-3 py-2 rounded-md">
+        <a href="/add-hotel"> Add Hotel </a>
+      </button>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer.ejs') %>
