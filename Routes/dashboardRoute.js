@@ -3,6 +3,8 @@ const dashboardController = require('../controllers/dashboardController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/dashboard', authMiddleware, dashboardController.dashboardPage);
+
+// Admin Routes
 router.get('/hotel', authMiddleware, dashboardController.hotelPage);
 router.get('/add-hotel', authMiddleware, dashboardController.addHotelPage);
 router.post('/add-hotel', authMiddleware, dashboardController.registerHotel);
@@ -11,6 +13,10 @@ router.post('/add-rooms/:hotel_id', authMiddleware, dashboardController.register
 router.get('/view-rooms/:hotel_id', authMiddleware, dashboardController.hotelRoomsPage);
 router.get('/update-rooms/:hotel_id', authMiddleware, dashboardController.updateHotelRoomsPage);
 router.post('/update-rooms/:hotel_id', authMiddleware, dashboardController.updateHotelRooms);
+
+// Client Routes
+router.get('/events', authMiddleware, dashboardController.eventsPage);
+
 
 
 module.exports = router;

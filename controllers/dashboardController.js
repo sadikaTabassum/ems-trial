@@ -12,6 +12,8 @@ class DashboardController {
         });
     }
 
+    // Admin Controllers ->
+
     hotelPage = async (req, res) => {
         const { userInfo } = req;
 
@@ -273,6 +275,30 @@ class DashboardController {
             });
         }
     };
+
+
+
+    // Client Controllers -> 
+
+    // TODO -> Get user specific Events
+    eventsPage = async (req, res) => {
+        const { userInfo } = req;
+
+        try {
+            res.status(200).render('dashboard/events.ejs', {
+                title: 'Events',
+                user: userInfo,
+            });
+        } catch (error) {
+            console.error('Error fetching events:', error);
+            res.status(500).render('dashboard/error.ejs', {
+                status: 500,
+                title: 'Error',
+                message: 'Internal server error',
+                error: error,
+            });
+        }
+    }
 
 
 
