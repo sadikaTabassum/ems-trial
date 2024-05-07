@@ -8,7 +8,9 @@ router.get('/add-hotel', authMiddleware, dashboardController.addHotelPage);
 router.post('/add-hotel', authMiddleware, dashboardController.registerHotel);
 router.get('/add-rooms/:hotel_id', authMiddleware, dashboardController.addHotelRoomsPage);
 router.post('/add-rooms/:hotel_id', authMiddleware, dashboardController.registerRoomsToHotel);
-router.get('/hotel/view-rooms/:hotel_id', authMiddleware, dashboardController.hotelRoomsPage);
+router.get('/view-rooms/:hotel_id', authMiddleware, dashboardController.hotelRoomsPage);
+router.get('/update-rooms/:hotel_id', authMiddleware, dashboardController.updateHotelRoomsPage);
+router.post('/update-rooms/:hotel_id', authMiddleware, dashboardController.updateHotelRooms);
 
 
 module.exports = router;
