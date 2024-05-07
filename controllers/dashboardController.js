@@ -326,18 +326,86 @@ class DashboardController {
     reserveEventPage = async (req, res) => {
         const { userInfo } = req;
 
-        res.status(200).render('dashboard/reserve-event.ejs', {
-            title: 'Reserve Event',
-            user: userInfo,
-            error: "",
-        });
-    }
+        try {
+            const eventTypesQuery = 'SELECT * FROM event_type';
+            const eventTypesResult = await pool.query(eventTypesQuery);
+            const eventTypesData = eventTypesResult.rows;
+
+            const hotelsQuery = 'SELECT * FROM hotel';
+            const hotelsResult = await pool.query(hotelsQuery);
+            const hotelsData = hotelsResult.rows;
+
+            const availableRoomsQuery = 'SELECT * FROM get_available_rooms_with_type()';
+            const availableRoomsResult = await pool.query(availableRoomsQuery);
+            const availableRoomsData = availableRoomsResult.rows;
+
+            res.status(200).render('dashboard/reserve-event.ejs', {
+                title: 'Reserve Event',
+                user: userInfo,
+                eventTypes: eventTypesData,
+                hotels: hotelsData,
+                rooms: availableRoomsData,
+                error: "",
+            });
+        } catch (error) {
+            console.error('Error fetching data for reserve event page:', error);
+            res.status(500).render('dashboard/error.ejs', {
+                status: 500,
+                title: 'Error',
+                message: 'Internal server error',
+                error: error,
+            });
+        }
+    };
+
 
 
     reserveEventRegister = async (req, res) => {
         const { userInfo } = req;
-        console.log(userInfo);
+
+        const form = new formidable.IncomingForm();
+
+        try {
+            const { fields } = await new Promise((resolve, reject) => {
+                form.parse(req, (err, fields) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve({ fields });
+                    }
+                });
+            });
+
+            const { event_type, hotel, room, start_date, end_date, room_quantity, no_of_people } = fields;
+
+            const userId = Number.parseInt(userInfo.id);
+            const hotelId = Number.parseInt(hotel);
+            const eventId = Number.parseInt(event_type);
+            const roomId = Number.parseInt(room);
+            const roomQuantity = Number.parseInt(room_quantity);
+            const numberOfPpl = Number.parseInt(no_of_people);
+
+            const insertEventReservationQuery = `
+            CALL INSERT_EVENT_RESERVATION(
+                ${userId}, ${hotelId}, ${eventId}, ${roomId}, '${start_date}', '${end_date}', ${roomQuantity}, ${0}, CURRENT_DATE, ${numberOfPpl}, ${1}
+            )`;
+
+
+            await pool.query(insertEventReservationQuery);
+
+            return res.status(200).redirect('/events');
+        } catch (error) {
+            return res.status(500).render('dashboard/error.ejs', {
+                status: 500,
+                title: 'Error',
+                message: 'Internal server error',
+                error: error
+            });
+        }
     }
+
+
+
 
 }
 

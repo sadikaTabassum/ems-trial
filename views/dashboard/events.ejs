@@ -20,7 +20,7 @@
                   scope="col"
                   class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
                 >
-                  Guest ID
+                  Event ID
                 </th>
                 <th
                   scope="col"
@@ -72,12 +72,12 @@
                 <td
                   class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
                 >
-                  <%= event.event_id %>
+                  <%= event.event_reservation_id %>
                 </td>
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
-                  <%= event.guest_id %>
+                  <%= event.event_id %>
                 </td>
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
@@ -87,13 +87,18 @@
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
-                  <%= event.start_date %>
+                  <%= event.start_date.toLocaleDateString('en-GB', { day:
+                  '2-digit', month: 'long', year: 'numeric', weekday: 'long' })
+                  %>
                 </td>
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
-                  <%= event.end_date %>
+                  <%= event.end_date.toLocaleDateString('en-GB', { day:
+                  '2-digit', month: 'long', year: 'numeric', weekday: 'long' })
+                  %>
                 </td>
+
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
@@ -112,8 +117,11 @@
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
-                  <%= event.status %>
+                  <% if (event.status === 1) { %> Reserved <% } else if
+                  (event.status === 2) { %> Cancelled <% } else if (event.status
+                  === 3) { %> Finished <% } %>
                 </td>
+
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
