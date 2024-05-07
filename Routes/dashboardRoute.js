@@ -4,7 +4,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/dashboard', authMiddleware, dashboardController.dashboardPage);
 
-// Admin Routes
+// Admin Hotel Routes
 router.get('/hotel', authMiddleware, dashboardController.hotelPage);
 router.get('/add-hotel', authMiddleware, dashboardController.addHotelPage);
 router.post('/add-hotel', authMiddleware, dashboardController.registerHotel);
@@ -13,9 +13,16 @@ router.post('/add-rooms/:hotel_id', authMiddleware, dashboardController.register
 router.get('/view-rooms/:hotel_id', authMiddleware, dashboardController.hotelRoomsPage);
 router.get('/update-rooms/:hotel_id', authMiddleware, dashboardController.updateHotelRoomsPage);
 router.post('/update-rooms/:hotel_id', authMiddleware, dashboardController.updateHotelRooms);
+// Admin Guest Routes
+router.get('/guests', authMiddleware, dashboardController.guestsPage);
+router.get('/update-guest', authMiddleware, dashboardController.updateGuestsPage);
+
+
 
 // Client Routes
 router.get('/events', authMiddleware, dashboardController.eventsPage);
+router.get('/reserve-event', authMiddleware, dashboardController.reserveEventPage);
+router.post('/reserve-event', authMiddleware, dashboardController.reserveEventRegister);
 
 
 

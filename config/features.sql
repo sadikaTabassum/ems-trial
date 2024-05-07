@@ -115,7 +115,7 @@ CREATE OR REPLACE PROCEDURE CREATE_HOTEL (
     FUNCTION GET_HOTEL_ROOMS(
         P_HOTEL_ID INT
     ) RETURNS TABLE ( ROOM_ID INT, ROOM_SIZE VARCHAR(30), ROOM_CAPACITY INT, ROOM_PRICE NUMERIC, TOTAL_ROOM INT, AVAILABLE_ROOM INT ) AS
-        $$     BEGIN RETURN QUERY
+        $$       BEGIN RETURN QUERY
         SELECT
             RT.ROOM_ID,
             RT.ROOM_SIZE,
@@ -130,9 +130,9 @@ CREATE OR REPLACE PROCEDURE CREATE_HOTEL (
         WHERE
             ARH.HOTEL_ID = P_HOTEL_ID;
     END;
-    $$     LANGUAGE PLPGSQL;
+    $$       LANGUAGE PLPGSQL;
  -- Feature 2: Update hotel rooms
-    CREATE OR REPLACE
+    CREATE   OR REPLACE
 
     FUNCTION UPDATE_HOTEL_ROOM(
         P_HOTEL_ID INT,
@@ -140,6 +140,61 @@ CREATE OR REPLACE PROCEDURE CREATE_HOTEL (
         P_TOTAL_ROOM INT,
         P_AVAILABLE_ROOM INT
     ) RETURNS VOID AS
-        $$  BEGIN UPDATE AVAILABLE_ROOM_PER_HOTEL AS ARH SET TOTAL_ROOM = P_TOTAL_ROOM, AVAILABLE_ROOM = P_AVAILABLE_ROOM FROM ROOM_TYPE AS RT WHERE ARH.HOTEL_ID = P_HOTEL_ID AND RT.ROOM_ID = ARH.ROOM_ID AND RT.ROOM_SIZE = P_ROOM_SIZE;
+        $$       BEGIN UPDATE AVAILABLE_ROOM_PER_HOTEL AS ARH SET TOTAL_ROOM = P_TOTAL_ROOM, AVAILABLE_ROOM = P_AVAILABLE_ROOM FROM ROOM_TYPE AS RT WHERE ARH.HOTEL_ID = P_HOTEL_ID AND RT.ROOM_ID = ARH.ROOM_ID AND RT.ROOM_SIZE = P_ROOM_SIZE;
     END;
-    $$  LANGUAGE PLPGSQL;
+    $$       LANGUAGE PLPGSQL;
+ -- Feature 2 -> Reserve Events by Clients
+    CREATE   OR REPLACE
+
+    PROCEDURE RESERVE_EVENT(
+        IN P_GUEST_ID INT,
+        IN P_HOTEL_ID INT,
+        IN P_EVENT_NAME VARCHAR(50),
+        IN P_START_DATE DATE,
+        IN P_END_DATE DATE,
+        IN P_ROOM_ID INT,
+        IN P_ROOM_QUANTITY INT,
+        IN P_NO_OF_PEOPLE NUMERIC
+    ) LANGUAGE PLPGSQL AS
+        $$       DECLARE V_EVENT_ID INT;
+        V_STATUS INT := 1; -- Default status is Reserved
+    BEGIN
+ -- Get the event ID based on the event name
+        SELECT
+            EVENT_ID INTO V_EVENT_ID
+        FROM
+            EVENT_TYPE
+        WHERE
+            EVENT_NAME = P_EVENT_NAME;
+ -- Insert reservation details into EVENT_RESERVATION table
+        INSERT INTO EVENT_RESERVATION (
+            GUEST_ID,
+            HOTEL_ID,
+            EVENT_ID,
+            START_DATE,
+            END_DATE,
+            ROOM_ID,
+            ROOM_QUANTITY,
+            DATE_OF_RESERVATION,
+            NO_OF_PEOPLE,
+            STATUS
+        ) VALUES (
+            P_GUEST_ID,
+            P_HOTEL_ID,
+            V_EVENT_ID,
+            P_START_DATE,
+            P_END_DATE,
+            P_ROOM_ID,
+            P_ROOM_QUANTITY,
+            CURRENT_DATE,
+            P_NO_OF_PEOPLE,
+            V_STATUS
+        );
+ -- Return success message
+        RAISE NOTICE 'Event reserved successfully!';
+    EXCEPTION
+        WHEN OTHERS THEN
+ -- Raise error message if any exception occurs
+            RAISE EXCEPTION 'Error: %', SQLERRM;
+    END;
+    PLPGSQL  ;

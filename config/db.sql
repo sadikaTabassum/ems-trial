@@ -184,40 +184,6 @@ INSERT INTO SERVICE_TYPE (
 
 --------------------------------------------------------------------------------------------------------------------------------------------
 
-CREATE TABLE GUEST (
-    GUEST_ID SERIAL PRIMARY KEY,
-    GUEST_NAME VARCHAR(50),
-    GUEST_PHONE VARCHAR(30),
-    GUEST_EMAIL VARCHAR(255) UNIQUE
-);
-
-INSERT INTO GUEST (
-    GUEST_NAME,
-    GUEST_PHONE,
-    GUEST_EMAIL
-) VALUES (
-    'Harish Shah',
-    '+1 860-610 (8162)',
-    'harishr1@umbc.edu'
-),
-(
-    'Mrs. Brown',
-    '+1 431-567 (7891)',
-    'brown3@yahoo.com'
-),
-(
-    'Mr. Zero',
-    '+1 433-567 (7891)',
-    'zero13@yahoo.com'
-),
-(
-    'Mr. Cyber',
-    '+1 436-567 (7891)',
-    'cyber13@yahoo.com'
-);
-
---------------------------------------------------------------------------------------------------------------------------------------------
-
 CREATE TABLE EVENT_RESERVATION (
     EVENT_RESERVATION_ID SERIAL PRIMARY KEY,
     GUEST_ID INT NOT NULL,
@@ -232,7 +198,7 @@ CREATE TABLE EVENT_RESERVATION (
     NO_OF_PEOPLE NUMERIC,
     STATUS INT,
     CONSTRAINT STATUS_CK CHECK (STATUS IN (1, 2, 3)), -- 1=Reserved, 2=Cancelled, 3=Finished
-    FOREIGN KEY (GUEST_ID) REFERENCES GUEST (GUEST_ID),
+    FOREIGN KEY (GUEST_ID) REFERENCES USERS (USER_ID),
     FOREIGN KEY (HOTEL_ID) REFERENCES HOTEL (HOTEL_ID),
     FOREIGN KEY (EVENT_ID) REFERENCES EVENT_TYPE (EVENT_ID),
     FOREIGN KEY (ROOM_ID) REFERENCES ROOM_TYPE (ROOM_ID)

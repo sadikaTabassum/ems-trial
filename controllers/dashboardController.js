@@ -50,6 +50,32 @@ class DashboardController {
     };
 
 
+    guestsPage = async (req, res) => {
+        const { userInfo } = req;
+
+        const guestQuery = "select * from users where user_type='client'";
+        const guestQueryResult = await pool.query(guestQuery);
+        const guests = guestQueryResult.rows;
+
+        res.status(200).render('dashboard/guests.ejs', {
+            title: 'Guests',
+            user: userInfo,
+            guests: guests,
+            error: "",
+        });
+    }
+
+    updateGuestsPage = async (req, res) => {
+        const { userInfo } = req;
+
+        // res.status(200).render('dashboard/update-guests.ejs', {
+        //     title: 'Update Guests',
+        //     user: userInfo,
+        //     error: "",
+        // });
+    }
+
+
     addHotelPage = async (req, res) => {
         const { userInfo } = req;
 
@@ -64,7 +90,7 @@ class DashboardController {
         const { userInfo } = req;
         const { hotel_id } = req.params;
 
-        const hotelQuery = `SELECT * FROM hotel WHERE hotel_id = $1`;
+        const hotelQuery = 'SELECT * FROM hotel WHERE hotel_id = $1';
         const hotelQueryResult = await pool.query(hotelQuery, [hotel_id]);
         const hotel = hotelQueryResult.rows[0];
 
@@ -143,7 +169,7 @@ class DashboardController {
 
             const { hotel_name, address, state, zip_code, website, phone } = fields;
 
-            const hotelCheckQuery = `SELECT COUNT(*) AS count FROM hotel WHERE hotel_name = $1`;
+            const hotelCheckQuery = 'SELECT COUNT(*) AS count FROM hotel WHERE hotel_name = $1';
             const hotelExistsResult = await pool.query(hotelCheckQuery, [hotel_name]);
             const hotelExists = hotelExistsResult.rows[0].count > 0;
 
@@ -190,12 +216,12 @@ class DashboardController {
 
             const { t_s_room, t_m_room, t_l_room, a_s_room, a_m_room, a_l_room } = fields;
 
-            const totalSmallRooms = parseInt(t_s_room);
-            const totalMediumRooms = parseInt(t_m_room);
-            const totalLargeRooms = parseInt(t_l_room);
-            const availableSmallRooms = parseInt(a_s_room);
-            const availableMediumRooms = parseInt(a_m_room);
-            const availableLargeRooms = parseInt(a_l_room);
+            const totalSmallRooms = Number.parseInt(t_s_room);
+            const totalMediumRooms = Number.parseInt(t_m_room);
+            const totalLargeRooms = Number.parseInt(t_l_room);
+            const availableSmallRooms = Number.parseInt(a_s_room);
+            const availableMediumRooms = Number.parseInt(a_m_room);
+            const availableLargeRooms = Number.parseInt(a_l_room);
 
             const addHotelRoomsQuery = `CALL CREATE_HOTEL_ROOM('${hotel_id}', '${totalSmallRooms}', '${totalMediumRooms}', '${totalLargeRooms}', '${availableSmallRooms}', '${availableMediumRooms}', '${availableLargeRooms}')`;
             await pool.query(addHotelRoomsQuery);
@@ -232,12 +258,12 @@ class DashboardController {
 
             const { t_small_hall_room, t_medium_hall_room, t_large_hall_room, a_small_hall_room, a_medium_hall_room, a_large_hall_room } = fields;
 
-            const totalSmallRooms = parseInt(t_small_hall_room);
-            const totalMediumRooms = parseInt(t_medium_hall_room);
-            const totalLargeRooms = parseInt(t_large_hall_room);
-            const availableSmallRooms = parseInt(a_small_hall_room);
-            const availableMediumRooms = parseInt(a_medium_hall_room);
-            const availableLargeRooms = parseInt(a_large_hall_room);
+            const totalSmallRooms = Number.parseInt(t_small_hall_room);
+            const totalMediumRooms = Number.parseInt(t_medium_hall_room);
+            const totalLargeRooms = Number.parseInt(t_large_hall_room);
+            const availableSmallRooms = Number.parseInt(a_small_hall_room);
+            const availableMediumRooms = Number.parseInt(a_medium_hall_room);
+            const availableLargeRooms = Number.parseInt(a_large_hall_room);
 
 
             const updateHotelRoomsQuery = `
@@ -280,27 +306,38 @@ class DashboardController {
 
     // Client Controllers -> 
 
-    // TODO -> Get user specific Events
     eventsPage = async (req, res) => {
         const { userInfo } = req;
 
-        try {
-            res.status(200).render('dashboard/events.ejs', {
-                title: 'Events',
-                user: userInfo,
-            });
-        } catch (error) {
-            console.error('Error fetching events:', error);
-            res.status(500).render('dashboard/error.ejs', {
-                status: 500,
-                title: 'Error',
-                message: 'Internal server error',
-                error: error,
-            });
-        }
+        const eventsQuery = `select * from event_reservation where guest_id='${userInfo.id}'`;
+        const eventsQueryResult = await pool.query(eventsQuery);
+        const events = eventsQueryResult.rows;
+
+        res.status(200).render('dashboard/events.ejs', {
+            title: 'Events',
+            user: userInfo,
+            events: events,
+            error: "",
+
+        })
     }
 
 
+    reserveEventPage = async (req, res) => {
+        const { userInfo } = req;
+
+        res.status(200).render('dashboard/reserve-event.ejs', {
+            title: 'Reserve Event',
+            user: userInfo,
+            error: "",
+        });
+    }
+
+
+    reserveEventRegister = async (req, res) => {
+        const { userInfo } = req;
+        console.log(userInfo);
+    }
 
 }
 

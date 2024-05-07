@@ -8,7 +8,7 @@
         >EventMS</span
       >
     </a>
-    <div class="flex items-center md:order-2 space-x-3 md:space-x-3">
+    <div class="flex items-center gap-2 md:order-2 space-x-3 md:space-x-3">
       <div
         class="flex text-sm bg-gray-800 rounded-full md:me-0 focus:ring-4 focus:ring-gray-300"
         id="user-menu-button"
@@ -25,7 +25,7 @@
 
       <a
         href="/user-logout"
-        class="text-sm border-y border-red-400 rounded-md px-2 py-1 text-primary-600 hover:bg-red-600 hover:text-white shadow-md"
+        class="text-sm border-y border-rose-400 rounded-md px-2 py-1 text-rose-600 hover:bg-rose-600 hover:text-white shadow-xl"
         >Logout</a
       >
     </div>
@@ -54,9 +54,9 @@
         </li>
         <li>
           <a
-            href="/events"
+            href="/guests"
             class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-primary-600 md:p-0"
-            >Events</a
+            >Guests</a
           >
         </li>
         <% } else if (user.user_type==='client' ) { %>
