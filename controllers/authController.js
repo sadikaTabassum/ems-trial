@@ -1,6 +1,6 @@
 const formidable = require('formidable');
 const pool = require('../config/db');
-const fs = require('fs').promises;
+const fs = require('node:fs').promises;
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const jwt = require('jsonwebtoken');
