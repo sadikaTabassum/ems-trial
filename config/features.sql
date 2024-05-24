@@ -1,3 +1,4 @@
+-----------------------------------------------------------------------------------------------------------
 -- Feature 1: Add a new hotel
 CREATE OR REPLACE PROCEDURE CREATE_HOTEL (
     P_HOTEL_NAME VARCHAR,
@@ -29,6 +30,7 @@ CREATE OR REPLACE PROCEDURE CREATE_HOTEL (
         RAISE NOTICE 'Please contact your administrator!...';
     END;
     $$        LANGUAGE PLPGSQL;
+ -----------------------------------------------------------------------------------------------------------
  -- Feature 1: Add rooms to the newly added hotel
     CREATE    OR REPLACE
 
@@ -131,6 +133,7 @@ CREATE OR REPLACE PROCEDURE CREATE_HOTEL (
             ARH.HOTEL_ID = P_HOTEL_ID;
     END;
     $$                LANGUAGE PLPGSQL;
+ -----------------------------------------------------------------------------------------------------------
  -- Feature 2: Update hotel rooms
     CREATE            OR REPLACE
 
@@ -143,6 +146,7 @@ CREATE OR REPLACE PROCEDURE CREATE_HOTEL (
         $$                BEGIN UPDATE AVAILABLE_ROOM_PER_HOTEL AS ARH SET TOTAL_ROOM = P_TOTAL_ROOM, AVAILABLE_ROOM = P_AVAILABLE_ROOM FROM ROOM_TYPE AS RT WHERE ARH.HOTEL_ID = P_HOTEL_ID AND RT.ROOM_ID = ARH.ROOM_ID AND RT.ROOM_SIZE = P_ROOM_SIZE;
     END;
     $$                LANGUAGE PLPGSQL;
+ -----------------------------------------------------------------------------------------------------------
  -- Feature 2 -> Reserve Events by Clients
     CREATE            OR REPLACE
 
@@ -218,3 +222,41 @@ CREATE OR REPLACE PROCEDURE CREATE_HOTEL (
             RAISE NOTICE 'Failed to add event reservation. Please contact your administrator!...';
     END;
     $$        LANGUAGE PLPGSQL;
+ -----------------------------------------------------------------------------------------------------------
+ -- Feature 4: Get event rooms
+ -- GET_EVENT_ROOMS function
+    CREATE    OR REPLACE
+
+    FUNCTION GET_EVENT_ROOMS(
+        P_EVENT_ID INT
+    ) RETURNS TABLE ( HOTEL_ID INT, HOTEL_NAME VARCHAR, ROOM_ID INT, ROOM_SIZE VARCHAR, ROOM_CAPACITY INT, ROOM_PRICE NUMERIC, TOTAL_ROOM INT, AVAILABLE_ROOM INT, START_DATE DATE, END_DATE DATE, ROOM_QUANTITY INT, ROOM_INVOICE NUMERIC, DATE_OF_RESERVATION DATE, NO_OF_PEOPLE NUMERIC, STATUS INT ) AS
+        $$  BEGIN RETURN QUERY
+        SELECT
+            H.HOTEL_ID,
+            H.HOTEL_NAME,
+            RT.ROOM_ID,
+            RT.ROOM_SIZE,
+            RT.ROOM_CAPACITY,
+            RT.ROOM_PRICE,
+            AR.TOTAL_ROOM,
+            AR.AVAILABLE_ROOM,
+            ER.START_DATE,
+            ER.END_DATE,
+            ER.ROOM_QUANTITY,
+            ER.ROOM_INVOICE,
+            ER.DATE_OF_RESERVATION,
+            ER.NO_OF_PEOPLE,
+            ER.STATUS
+        FROM
+            EVENT_RESERVATION ER
+            JOIN HOTEL H
+            ON ER.HOTEL_ID = H.HOTEL_ID
+            JOIN ROOM_TYPE RT
+            ON ER.ROOM_ID = RT.ROOM_ID
+            JOIN AVAILABLE_ROOM_PER_HOTEL AR
+            ON H.HOTEL_ID = AR.HOTEL_ID
+            AND RT.ROOM_ID = AR.ROOM_ID
+        WHERE
+            ER.EVENT_ID = P_EVENT_ID;
+    END;
+    $$  LANGUAGE PLPGSQL;
