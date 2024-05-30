@@ -48,11 +48,13 @@ router.get(
 	authMiddleware,
 	dashboardController.reserveEventPage,
 );
+
 router.post(
 	"/reserve-event",
 	authMiddleware,
 	dashboardController.reserveEventRegister,
 );
+
 router.get(
 	"/event-rooms/:event_id",
 	authMiddleware,
@@ -63,6 +65,12 @@ router.get(
 	"/event-rooms/:event_id/add-room",
 	authMiddleware,
 	dashboardController.addRoomsPage,
+);
+
+router.post(
+	"/add-room/:event_id",
+	authMiddleware,
+	dashboardController.addExtraRoom,
 );
 
 module.exports = router;

@@ -3,7 +3,7 @@
 
 <section>
   <div
-    class="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0"
+    class="flex flex-col items-center justify-start px-6 py-8 mx-auto md:h-screen lg:py-0"
   >
     <h3 class="flex items-center mb-6 text-2xl font-semibold text-gray-900">
       <img class="w-8 h-8 mr-2" src="/hotel.png" alt="logo" />
@@ -12,24 +12,24 @@
     <div
       class="w-full bg-white rounded-lg shadow border md:mt-0 sm:max-w-2xl xl:p-0"
     >
-      <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
+      <div class="p-6 md:space-y-6 sm:p-8">
         <form
           class="space-y-4 md:space-y-6"
-          action="/add-rooms/<%= eventId %>"
+          action="/add-room/<%= eventId %>"
           method="post"
           enctype="multipart/form-data"
         >
           <div>
             <label
-              for="t_s_room"
+              for="extra_room"
               class="block mb-2 text-sm font-medium text-gray-900"
-              >Total Small Rooms</label
+              >Add Rooms</label
             >
             <input
               type="number"
-              name="t_s_room"
-              id="t_s_room"
-              placeholder="Total Small Rooms"
+              name="extra_room"
+              id="extra_room"
+              placeholder="Rooms to add"
               class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
               required
             />

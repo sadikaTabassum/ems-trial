@@ -463,6 +463,43 @@ class DashboardController {
 			});
 		}
 	};
+
+	addExtraRoom = async (req, res) => {
+		const { event_id } = req.params;
+
+		const form = new formidable.IncomingForm();
+
+		try {
+			const { fields } = await new Promise((resolve, reject) => {
+				form.parse(req, (err, fields) => {
+					if (err) {
+						reject(err);
+					} else {
+						resolve({ fields });
+					}
+				});
+			});
+
+			const { extra_room } = fields;
+
+			const extraRoom = Number.parseInt(extra_room);
+			const eventId = Number.parseInt(event_id);
+
+			await pool.query(
+				`SELECT add_extra_room_to_event_reservation(${eventId}, ${extraRoom})`,
+			);
+
+			return res.status(200).redirect(`/event-rooms/${eventId}`);
+		} catch (error) {
+			console.error("Error fetching event:", error);
+			res.status(500).render("dashboard/error.ejs", {
+				status: 500,
+				title: "Error",
+				message: "Internal server error",
+				error: error,
+			});
+		}
+	};
 }
 
 module.exports = new DashboardController();

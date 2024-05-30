@@ -230,7 +230,7 @@ CREATE OR REPLACE PROCEDURE CREATE_HOTEL (
     FUNCTION GET_EVENT_ROOMS(
         P_EVENT_ID INT
     ) RETURNS TABLE ( HOTEL_ID INT, HOTEL_NAME VARCHAR, ROOM_ID INT, ROOM_SIZE VARCHAR, ROOM_CAPACITY INT, ROOM_PRICE NUMERIC, TOTAL_ROOM INT, AVAILABLE_ROOM INT, START_DATE DATE, END_DATE DATE, ROOM_QUANTITY INT, ROOM_INVOICE NUMERIC, DATE_OF_RESERVATION DATE, NO_OF_PEOPLE NUMERIC, STATUS INT ) AS
-        $$     BEGIN RETURN QUERY
+        $$               BEGIN RETURN QUERY
         SELECT
             H.HOTEL_ID,
             H.HOTEL_NAME,
@@ -259,14 +259,14 @@ CREATE OR REPLACE PROCEDURE CREATE_HOTEL (
         WHERE
             ER.EVENT_ID = P_EVENT_ID;
     END;
-    $$     LANGUAGE PLPGSQL;
+    $$               LANGUAGE PLPGSQL;
  -----------------------------------------------------------------------------------------------------------
  -- Feature 5: Get event rooms by hotel
-    CREATE OR REPLACE
+    CREATE           OR REPLACE
 
     FUNCTION GET_AVAILABLE_ROOMS_WITH_TYPE(
     ) RETURNS TABLE ( AVAILABLE_ROOM_ID INTEGER, HOTEL_ID INTEGER, ROOM_ID INTEGER, ROOM_TYPE_NAME VARCHAR, AVAILABLE_ROOMS INTEGER ) AS
-        $$  BEGIN RETURN QUERY
+        $$               BEGIN RETURN QUERY
         SELECT
             ARH.AVAILABLE_ROOM_ID,
             ARH.HOTEL_ID,
@@ -278,4 +278,67 @@ CREATE OR REPLACE PROCEDURE CREATE_HOTEL (
             INNER JOIN ROOM_TYPE RT
             ON ARH.ROOM_ID = RT.ROOM_ID;
     END;
-    $$  LANGUAGE PLPGSQL;
+    $$               LANGUAGE PLPGSQL;
+ -----------------------------------------------------------------------------------------------------------
+ -- Feature 6: Adding extra room to event reservation
+    CREATE           OR REPLACE
+
+    FUNCTION ADD_EXTRA_ROOM_TO_EVENT_RESERVATION(
+        P_EVENT_RESERVATION_ID INT,
+        P_ADDITIONAL_ROOMS INT
+    ) RETURNS VOID AS
+        $$               DECLARE V_HOTEL_ID INT;
+        V_ROOM_ID        INT;
+        V_AVAILABLE_ROOM INT;
+        V_ROOM_PRICE     NUMERIC;
+    BEGIN
+        SELECT
+            HOTEL_ID,
+            ROOM_ID INTO V_HOTEL_ID,
+            V_ROOM_ID
+        FROM
+            EVENT_RESERVATION
+        WHERE
+            EVENT_RESERVATION_ID = P_EVENT_RESERVATION_ID;
+ -- Check if there are enough available rooms
+        SELECT
+            AVAILABLE_ROOM INTO V_AVAILABLE_ROOM
+        FROM
+            AVAILABLE_ROOM_PER_HOTEL
+        WHERE
+            HOTEL_ID = V_HOTEL_ID
+            AND ROOM_ID = V_ROOM_ID;
+        IF V_AVAILABLE_ROOM < P_ADDITIONAL_ROOMS THEN
+            RAISE
+        EXCEPTION
+            'Not enough available rooms for the requested addition';
+        END IF;
+ -- Retrieve the room price
+        SELECT
+            ROOM_PRICE INTO V_ROOM_PRICE
+        FROM
+            ROOM_TYPE
+        WHERE
+            ROOM_ID = V_ROOM_ID;
+ -- Update the EVENT_RESERVATION table
+        UPDATE EVENT_RESERVATION
+        SET
+            ROOM_QUANTITY = ROOM_QUANTITY + P_ADDITIONAL_ROOMS,
+            ROOM_INVOICE = ROOM_INVOICE + (
+                P_ADDITIONAL_ROOMS * V_ROOM_PRICE
+            )
+        WHERE
+            EVENT_RESERVATION_ID = P_EVENT_RESERVATION_ID
+            AND STATUS = 1;
+ -- Ensure the status is 'Reserved'
+ -- Update the AVAILABLE_ROOM_PER_HOTEL table
+        UPDATE AVAILABLE_ROOM_PER_HOTEL
+        SET
+            AVAILABLE_ROOM = AVAILABLE_ROOM - P_ADDITIONAL_ROOMS
+        WHERE
+            HOTEL_ID = V_HOTEL_ID
+            AND ROOM_ID = V_ROOM_ID;
+ -- Raise notice for debugging
+        RAISE NOTICE 'Added % additional rooms to event reservation ID %', P_ADDITIONAL_ROOMS, P_EVENT_RESERVATION_ID;
+    END;
+    $$        LANGUAGE PLPGSQL  ;
