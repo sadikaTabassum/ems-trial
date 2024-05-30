@@ -177,6 +177,8 @@ class DashboardController {
 			const hotelExistsResult = await pool.query(hotelCheckQuery, [hotel_name]);
 			const hotelExists = hotelExistsResult.rows[0].count > 0;
 
+			console.log(hotelExistsResult.rowCount);
+
 			if (hotelExists) {
 				return res.status(400).render("dashboard/add-hotel.ejs", {
 					title: "Add Hotel",
