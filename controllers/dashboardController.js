@@ -229,7 +229,7 @@ class DashboardController {
 			const addHotelRoomsQuery = `CALL CREATE_HOTEL_ROOM('${hotel_id}', '${totalSmallRooms}', '${totalMediumRooms}', '${totalLargeRooms}', '${availableSmallRooms}', '${availableMediumRooms}', '${availableLargeRooms}')`;
 			await pool.query(addHotelRoomsQuery);
 
-			return res.status(200).redirect(`/hotel/${hotel_id}/rooms`);
+			return res.status(200).redirect(`/view-rooms/${hotel_id}`);
 		} catch (error) {
 			return res.status(500).render("dashboard/error.ejs", {
 				status: 500,
