@@ -142,7 +142,7 @@ FUNCTION UPDATE_HOTEL_ROOM(
 END;
 $$                LANGUAGE PLPGSQL;
  -----------------------------------------------------------------------------------------------------------
- -- Feature 2 -> Reserve Events by Clients
+ -- Feature 3 -> Reserve Events by Clients
 CREATE            OR REPLACE
 
 PROCEDURE INSERT_EVENT_RESERVATION (

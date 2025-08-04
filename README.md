@@ -10,7 +10,7 @@ npm install
 
 ## Database
 
-The application uses a PostgreSQL database. All the database configurations are in the `config` folder. The `.sql` files contain all the database schema and data.
+The application uses a PostgreSQL database. All the database configurations are in the `config` folder. The `.sql` files contain all the database schema and data. You need to create a PostgreSQL database and run the SQL codes in to set up the database. Simply run the SQL codes in the files in the `config` folder to create the necessary tables and insert initial data.
 
 ## Running the Application
 
