@@ -61,59 +61,71 @@
               </tr>
             </thead>
             <tbody>
-              <% for(let hotel of hotels) { %>
+              <% if (Array.isArray(hotels) && hotels.length) { %> <%
+              hotels.forEach((hotel) => { %>
               <tr class="border-b">
                 <td
                   class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
                 >
-                  <%= hotel.hotel_id %>
+                  <%= hotel.HOTEL_ID ?? hotel.hotel_id %>
                 </td>
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
-                  <%= hotel.hotel_name %>
+                  <%= hotel.HOTEL_NAME ?? hotel.hotel_name %>
                 </td>
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
-                  <%= hotel.hotel_address %>
+                  <%= hotel.ADDRESS ?? hotel.HOTEL_ADDRESS ?? '-' %>
                 </td>
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
-                  <%= hotel.state %>
+                  <%= hotel.STATE ?? hotel.state %>
                 </td>
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
-                  <%= hotel.zip_code %>
+                  <%= hotel.ZIP_CODE ?? hotel.zip_code %>
                 </td>
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
-                  <%= hotel.website %>
+                  <%= hotel.WEBSITE ?? hotel.website ?? '-' %>
                 </td>
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
-                  <%= hotel.phone %>
+                  <%= hotel.PHONE ?? hotel.phone ?? '-' %>
                 </td>
                 <td
                   class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
                 >
-                  <% if (hotel.has_rooms_assigned) { %>
-                  <button
-                    class="text-sm hover:bg-lime-700 hover:text-white px-2 border-2 border-lime-700 py-1 rounded-md bg-gray-100 text-lime-700"
+                  <% const hid = hotel.HOTEL_ID ?? hotel.hotel_id; %> <% const
+                  hasRooms = Number(hotel.HAS_ROOMS_ASSIGNED ??
+                  hotel.has_rooms_assigned) === 1; %> <% if (hasRooms) { %>
+                  <a
+                    class="text-sm hover:bg-lime-700 hover:text-white px-2 border-2 border-lime-700 py-1 rounded-md bg-gray-100 text-lime-700 inline-block"
+                    href="/view-rooms/<%= hid %>"
+                    >View Rooms</a
                   >
-                    <a href="/view-rooms/<%= hotel.hotel_id %>"> View Rooms </a>
-                  </button>
                   <% } else { %>
-                  <button
-                    class="text-sm hover:bg-gray-700 hover:text-white px-2 border-2 border-gray-400 py-1 rounded-md bg-gray-100 text-gray-900"
+                  <a
+                    class="text-sm hover:bg-gray-700 hover:text-white px-2 border-2 border-gray-400 py-1 rounded-md bg-gray-100 text-gray-900 inline-block"
+                    href="/add-rooms/<%= hid %>"
+                    >Add Rooms</a
                   >
-                    <a href="/add-rooms/<%= hotel.hotel_id %>"> Add Rooms </a>
-                  </button>
                   <% } %>
+                </td>
+              </tr>
+              <% }) %> <% } else { %>
+              <tr>
+                <td
+                  colspan="8"
+                  class="px-6 py-8 text-center text-sm text-gray-500"
+                >
+                  No hotels found.
                 </td>
               </tr>
               <% } %>

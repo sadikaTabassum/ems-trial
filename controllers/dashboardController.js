@@ -1,505 +1,544 @@
-const pool = require("../config/db");
+// controllers/DashboardController.js
+const db = require("../config/db");
 const formidable = require("formidable");
+const oracledb = require("oracledb");
+
+const toStr = (v) => (Array.isArray(v) ? String(v[0]) : String(v ?? ""));
 
 class DashboardController {
-	dashboardPage = (req, res) => {
-		const { userInfo } = req;
-
-		res.status(200).render("dashboard/index.ejs", {
-			title: "Dashboard",
-			user: userInfo,
-		});
-	};
-
-	// Admin Controllers ->
-
-	hotelPage = async (req, res) => {
-		const { userInfo } = req;
-
-		try {
-			const query = `
-            SELECT DISTINCT
-            H.*,
-                CASE
-            WHEN ARH.HOTEL_ID IS NOT NULL THEN TRUE
-            ELSE FALSE
-            END AS has_rooms_assigned
-            FROM
-            HOTEL H
-            LEFT JOIN
-            AVAILABLE_ROOM_PER_HOTEL ARH ON H.HOTEL_ID = ARH.HOTEL_ID;
-        `;
-
-			const { rows } = await pool.query(query);
-
-			res.status(200).render("dashboard/hotel.ejs", {
-				title: "Hotel",
-				user: userInfo,
-				hotels: rows,
-			});
-		} catch (error) {
-			console.error(
-				"Error fetching hotels with room assignment status:",
-				error,
-			);
-			res.status(500).render("dashboard/error.ejs", {
-				status: 500,
-				title: "Error",
-				message: "Internal server error",
-				error: error,
-			});
-		}
-	};
-
-	guestsPage = async (req, res) => {
-		const { userInfo } = req;
-
-		const guestQuery = "select * from users where user_type='client'";
-		const guestQueryResult = await pool.query(guestQuery);
-		const guests = guestQueryResult.rows;
-
-		res.status(200).render("dashboard/guests.ejs", {
-			title: "Guests",
-			user: userInfo,
-			guests: guests,
-			error: "",
-		});
-	};
-
-	updateGuestsPage = async (req, res) => {
-		const { userInfo } = req;
-
-		// res.status(200).render('dashboard/update-guests.ejs', {
-		//     title: 'Update Guests',
-		//     user: userInfo,
-		//     error: "",
-		// });
-	};
-
-	addHotelPage = async (req, res) => {
-		const { userInfo } = req;
-
-		res.status(200).render("dashboard/add-hotel.ejs", {
-			title: "Add Hotel",
-			user: userInfo,
-			error: "",
-		});
-	};
-
-	addHotelRoomsPage = async (req, res) => {
-		const { userInfo } = req;
-		const { hotel_id } = req.params;
-
-		const hotelQuery = "SELECT * FROM hotel WHERE hotel_id = $1";
-		const hotelQueryResult = await pool.query(hotelQuery, [hotel_id]);
-		const hotel = hotelQueryResult.rows[0];
-
-		res.status(200).render("dashboard/add-rooms.ejs", {
-			title: "Add Rooms",
-			user: userInfo,
-			error: "",
-			hotel: hotel,
-		});
-	};
-
-	hotelRoomsPage = async (req, res) => {
-		const { userInfo } = req;
-		const { hotel_id } = req.params;
-
-		try {
-			const { rows } = await pool.query("SELECT * FROM GET_HOTEL_ROOMS($1)", [
-				hotel_id,
-			]);
-
-			res.status(200).render("dashboard/hotel-rooms.ejs", {
-				title: "Hotel Rooms",
-				user: userInfo,
-				hotelId: hotel_id,
-				rooms: rows,
-			});
-		} catch (error) {
-			console.error("Error fetching hotel rooms:", error);
-			res.status(500).render("dashboard/error.ejs", {
-				status: 500,
-				title: "Error",
-				message: "Internal server error",
-				error: error,
-			});
-		}
-	};
-
-	updateHotelRoomsPage = async (req, res) => {
-		const { userInfo } = req;
-		const { hotel_id } = req.params;
-
-		try {
-			const { rows } = await pool.query("SELECT * FROM GET_HOTEL_ROOMS($1)", [
-				hotel_id,
-			]);
-
-			res.status(200).render("dashboard/update-rooms.ejs", {
-				title: "Update Rooms",
-				user: userInfo,
-				hotelId: hotel_id,
-				rooms: rows,
-				error: "",
-			});
-		} catch (error) {
-			console.error("Error fetching hotel rooms:", error);
-			res.status(500).render("dashboard/error.ejs", {
-				status: 500,
-				title: "Error",
-				message: "Internal server error",
-				error: error,
-			});
-		}
-	};
-
-	registerHotel = async (req, res) => {
-		const { userInfo } = req;
-		const form = new formidable.IncomingForm();
-
-		try {
-			const { fields } = await new Promise((resolve, reject) => {
-				form.parse(req, (err, fields) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve({ fields });
-					}
-				});
-			});
-
-			const { hotel_name, address, state, zip_code, website, phone } = fields;
-
-			const hotelCheckQuery =
-				"SELECT COUNT(*) AS count FROM hotel WHERE hotel_name = $1";
-			const hotelExistsResult = await pool.query(hotelCheckQuery, [hotel_name]);
-			const hotelExists = hotelExistsResult.rows[0].count > 0;
-
-			console.log(hotelExistsResult.rowCount);
-
-			if (hotelExists) {
-				return res.status(400).render("dashboard/add-hotel.ejs", {
-					title: "Add Hotel",
-					user: userInfo,
-					error: "Hotel with this name already exists",
-				});
-			}
-
-			const createHotelQuery = `CALL CREATE_HOTEL('${hotel_name}', '${address}', '${state}', '${zip_code}', '${website}', '${phone}')`;
-			await pool.query(createHotelQuery);
-
-			return res.status(200).redirect("/hotel");
-		} catch (error) {
-			return res.status(500).render("dashboard/error.ejs", {
-				status: 500,
-				title: "Error",
-				message: "Internal server error",
-				error: error,
-			});
-		}
-	};
-
-	registerRoomsToHotel = async (req, res) => {
-		const { userInfo } = req;
-		const { hotel_id } = req.params;
-
-		const form = new formidable.IncomingForm();
-
-		try {
-			const { fields } = await new Promise((resolve, reject) => {
-				form.parse(req, (err, fields) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve({ fields });
-					}
-				});
-			});
-
-			const { t_s_room, t_m_room, t_l_room, a_s_room, a_m_room, a_l_room } =
-				fields;
-
-			const totalSmallRooms = Number.parseInt(t_s_room);
-			const totalMediumRooms = Number.parseInt(t_m_room);
-			const totalLargeRooms = Number.parseInt(t_l_room);
-			const availableSmallRooms = Number.parseInt(a_s_room);
-			const availableMediumRooms = Number.parseInt(a_m_room);
-			const availableLargeRooms = Number.parseInt(a_l_room);
-
-			const addHotelRoomsQuery = `CALL CREATE_HOTEL_ROOM('${hotel_id}', '${totalSmallRooms}', '${totalMediumRooms}', '${totalLargeRooms}', '${availableSmallRooms}', '${availableMediumRooms}', '${availableLargeRooms}')`;
-			await pool.query(addHotelRoomsQuery);
-
-			return res.status(200).redirect(`/view-rooms/${hotel_id}`);
-		} catch (error) {
-			return res.status(500).render("dashboard/error.ejs", {
-				status: 500,
-				title: "Error",
-				message: "Internal server error",
-				error: error,
-			});
-		}
-	};
-
-	updateHotelRooms = async (req, res) => {
-		const { userInfo } = req;
-		const { hotel_id } = req.params;
-
-		const form = new formidable.IncomingForm();
-
-		try {
-			const { fields } = await new Promise((resolve, reject) => {
-				form.parse(req, (err, fields) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve({ fields });
-					}
-				});
-			});
-
-			const {
-				t_small_hall_room,
-				t_medium_hall_room,
-				t_large_hall_room,
-				a_small_hall_room,
-				a_medium_hall_room,
-				a_large_hall_room,
-			} = fields;
-
-			const totalSmallRooms = Number.parseInt(t_small_hall_room);
-			const totalMediumRooms = Number.parseInt(t_medium_hall_room);
-			const totalLargeRooms = Number.parseInt(t_large_hall_room);
-			const availableSmallRooms = Number.parseInt(a_small_hall_room);
-			const availableMediumRooms = Number.parseInt(a_medium_hall_room);
-			const availableLargeRooms = Number.parseInt(a_large_hall_room);
-
-			const updateHotelRoomsQuery = `
-            SELECT UPDATE_HOTEL_ROOM(
-                ${hotel_id},
-                'small_hall',
-                ${totalSmallRooms},
-                ${availableSmallRooms}
-            );
-
-            SELECT UPDATE_HOTEL_ROOM(
-                ${hotel_id},
-                'medium_hall',
-                ${totalMediumRooms},
-                ${availableMediumRooms}
-            );
-
-            SELECT UPDATE_HOTEL_ROOM(
-                ${hotel_id},
-                'large_hall',
-                ${totalLargeRooms},
-                ${availableLargeRooms}
-            );
-        `;
-			await pool.query(updateHotelRoomsQuery);
-
-			return res.status(200).redirect(`/view-rooms/${hotel_id}`);
-		} catch (error) {
-			return res.status(500).render("dashboard/error.ejs", {
-				status: 500,
-				title: "Error",
-				message: "Internal server error",
-				error: error,
-			});
-		}
-	};
-
-	// Client Controllers ->
-
-	eventsPage = async (req, res) => {
-		const { userInfo } = req;
-
-		const eventsQuery = `select * from event_reservation where guest_id='${userInfo.id}'`;
-		const eventsQueryResult = await pool.query(eventsQuery);
-		const events = eventsQueryResult.rows;
-
-		res.status(200).render("dashboard/events.ejs", {
-			title: "Events",
-			user: userInfo,
-			events: events,
-			error: "",
-		});
-	};
-
-	reserveEventPage = async (req, res) => {
-		const { userInfo } = req;
-
-		try {
-			const eventTypesQuery = "SELECT * FROM event_type";
-			const eventTypesResult = await pool.query(eventTypesQuery);
-			const eventTypesData = eventTypesResult.rows;
-
-			const hotelsQuery = "SELECT * FROM hotel";
-			const hotelsResult = await pool.query(hotelsQuery);
-			const hotelsData = hotelsResult.rows;
-
-			const availableRoomsQuery =
-				"SELECT * FROM get_available_rooms_with_type()";
-			const availableRoomsResult = await pool.query(availableRoomsQuery);
-			const availableRoomsData = availableRoomsResult.rows;
-
-			res.status(200).render("dashboard/reserve-event.ejs", {
-				title: "Reserve Event",
-				user: userInfo,
-				eventTypes: eventTypesData,
-				hotels: hotelsData,
-				rooms: availableRoomsData,
-				error: "",
-			});
-		} catch (error) {
-			console.error("Error fetching data for reserve event page:", error);
-			res.status(500).render("dashboard/error.ejs", {
-				status: 500,
-				title: "Error",
-				message: "Internal server error",
-				error: error,
-			});
-		}
-	};
-
-	reserveEventRegister = async (req, res) => {
-		const { userInfo } = req;
-
-		const form = new formidable.IncomingForm();
-
-		try {
-			const { fields } = await new Promise((resolve, reject) => {
-				form.parse(req, (err, fields) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve({ fields });
-					}
-				});
-			});
-
-			const {
-				event_type,
-				hotel,
-				room,
-				start_date,
-				end_date,
-				room_quantity,
-				no_of_people,
-			} = fields;
-
-			const userId = Number.parseInt(userInfo.id);
-			const hotelId = Number.parseInt(hotel);
-			const eventId = Number.parseInt(event_type);
-			const roomId = Number.parseInt(room);
-			const roomQuantity = Number.parseInt(room_quantity);
-			const numberOfPpl = Number.parseInt(no_of_people);
-
-			const insertEventReservationQuery = `
-            CALL INSERT_EVENT_RESERVATION(
-                ${userId}, ${hotelId}, ${eventId}, ${roomId}, '${start_date}', '${end_date}', ${roomQuantity}, ${0}, CURRENT_DATE, ${numberOfPpl}, ${1}
-            )`;
-
-			await pool.query(insertEventReservationQuery);
-
-			return res.status(200).redirect("/events");
-		} catch (error) {
-			return res.status(500).render("dashboard/error.ejs", {
-				status: 500,
-				title: "Error",
-				message: "Internal server error",
-				error: error,
-			});
-		}
-	};
-
-	eventRoomsPage = async (req, res) => {
-		const { userInfo } = req;
-		const { event_id } = req.params;
-
-		try {
-			const eventRoomsQuery = `
-            SELECT * FROM GET_EVENT_ROOMS(${event_id})
-        `;
-
-			const { rows } = await pool.query(eventRoomsQuery);
-
-			res.status(200).render("dashboard/event-rooms.ejs", {
-				title: "Event Rooms",
-				user: userInfo,
-				eventId: event_id,
-				rooms: rows,
-			});
-		} catch (error) {
-			console.error("Error fetching event rooms:", error);
-			res.status(500).render("dashboard/error.ejs", {
-				status: 500,
-				title: "Error",
-				message: "Internal server error",
-				error: error,
-			});
-		}
-	};
-
-	addRoomsPage = async (req, res) => {
-		const { userInfo } = req;
-		const { event_id } = req.params;
-
-		try {
-			res.status(200).render("dashboard/add-event-rooms.ejs", {
-				title: "Add Rooms",
-				user: userInfo,
-				eventId: event_id,
-				error: "",
-			});
-		} catch (error) {
-			console.error("Error fetching event:", error);
-			res.status(500).render("dashboard/error.ejs", {
-				status: 500,
-				title: "Error",
-				message: "Internal server error",
-				error: error,
-			});
-		}
-	};
-
-	addExtraRoom = async (req, res) => {
-		const { event_id } = req.params;
-
-		const form = new formidable.IncomingForm();
-
-		try {
-			const { fields } = await new Promise((resolve, reject) => {
-				form.parse(req, (err, fields) => {
-					if (err) {
-						reject(err);
-					} else {
-						resolve({ fields });
-					}
-				});
-			});
-
-			const { extra_room } = fields;
-
-			const extraRoom = Number.parseInt(extra_room);
-			const eventId = Number.parseInt(event_id);
-
-			await pool.query(
-				`SELECT add_extra_room_to_event_reservation(${eventId}, ${extraRoom})`,
-			);
-
-			return res.status(200).redirect(`/event-rooms/${eventId}`);
-		} catch (error) {
-			console.error("Error fetching event:", error);
-			res.status(500).render("dashboard/error.ejs", {
-				status: 500,
-				title: "Error",
-				message: "Internal server error",
-				error: error,
-			});
-		}
-	};
+  dashboardPage = (req, res) => {
+    const { userInfo } = req;
+    res.status(200).render("dashboard/index.ejs", {
+      title: "Dashboard",
+      user: userInfo,
+    });
+  };
+
+  // Admin Controllers ->
+
+  hotelPage = async (req, res) => {
+    const { userInfo } = req;
+    try {
+      // Oracle has no TRUE/FALSE in SQL -> return 1/0 and coerce in the view if needed
+      const sql = `
+        SELECT DISTINCT
+          H.*,
+          CASE WHEN ARH.HOTEL_ID IS NOT NULL THEN 1 ELSE 0 END AS HAS_ROOMS_ASSIGNED
+        FROM HOTEL H
+        LEFT JOIN AVAILABLE_ROOM_PER_HOTEL ARH
+          ON H.HOTEL_ID = ARH.HOTEL_ID
+      `;
+      const { rows } = await db.execute(
+        sql,
+        {},
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      res.status(200).render("dashboard/hotel.ejs", {
+        title: "Hotel",
+        user: userInfo,
+        hotels: rows,
+      });
+    } catch (error) {
+      console.error(
+        "Error fetching hotels with room assignment status:",
+        error
+      );
+      res.status(500).render("dashboard/error.ejs", {
+        status: 500,
+        title: "Error",
+        message: "Internal server error",
+        error,
+      });
+    }
+  };
+
+  guestsPage = async (req, res) => {
+    const { userInfo } = req;
+    const sql = `SELECT * FROM USERS WHERE USER_TYPE = :role`;
+    const { rows } = await db.execute(
+      sql,
+      { role: "client" },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.status(200).render("dashboard/guests.ejs", {
+      title: "Guests",
+      user: userInfo,
+      guests: rows,
+      error: "",
+    });
+  };
+
+  updateGuestsPage = async (_req, _res) => {
+    // no-op for now
+  };
+
+  addHotelPage = async (req, res) => {
+    const { userInfo } = req;
+    res.status(200).render("dashboard/add-hotel.ejs", {
+      title: "Add Hotel",
+      user: userInfo,
+      error: "",
+    });
+  };
+
+  addHotelRoomsPage = async (req, res) => {
+    const { userInfo } = req;
+    const { hotel_id } = req.params;
+
+    const sql = `SELECT * FROM HOTEL WHERE HOTEL_ID = :id`;
+    const { rows } = await db.execute(
+      sql,
+      { id: Number(hotel_id) },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    const hotel = rows?.[0];
+
+    res.status(200).render("dashboard/add-rooms.ejs", {
+      title: "Add Rooms",
+      user: userInfo,
+      error: "",
+      hotel,
+    });
+  };
+
+  hotelRoomsPage = async (req, res) => {
+    const { userInfo } = req;
+    const { hotel_id } = req.params;
+
+    try {
+      // If GET_HOTEL_ROOMS is a table function, Oracle syntax is SELECT * FROM TABLE(func(:id))
+      const sql = `SELECT * FROM TABLE(GET_HOTEL_ROOMS(:id))`;
+      const { rows } = await db.execute(
+        sql,
+        { id: Number(hotel_id) },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      res.status(200).render("dashboard/hotel-rooms.ejs", {
+        title: "Hotel Rooms",
+        user: userInfo,
+        hotelId: hotel_id,
+        rooms: rows,
+      });
+    } catch (error) {
+      console.error("Error fetching hotel rooms:", error);
+      res.status(500).render("dashboard/error.ejs", {
+        status: 500,
+        title: "Error",
+        message: "Internal server error",
+        error,
+      });
+    }
+  };
+
+  updateHotelRoomsPage = async (req, res) => {
+    const { userInfo } = req;
+    const { hotel_id } = req.params;
+
+    try {
+      const sql = `SELECT * FROM TABLE(GET_HOTEL_ROOMS(:id))`;
+      const { rows } = await db.execute(
+        sql,
+        { id: Number(hotel_id) },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      res.status(200).render("dashboard/update-rooms.ejs", {
+        title: "Update Rooms",
+        user: userInfo,
+        hotelId: hotel_id,
+        rooms: rows,
+        error: "",
+      });
+    } catch (error) {
+      console.error("Error fetching hotel rooms:", error);
+      res.status(500).render("dashboard/error.ejs", {
+        status: 500,
+        title: "Error",
+        message: "Internal server error",
+        error,
+      });
+    }
+  };
+
+  registerHotel = async (req, res) => {
+    const { userInfo } = req;
+    const form = new formidable.IncomingForm({ multiples: false });
+
+    try {
+      const { fields } = await new Promise((resolve, reject) => {
+        form.parse(req, (err, fields) =>
+          err ? reject(err) : resolve({ fields })
+        );
+      });
+
+      const hotel_name = toStr(fields.hotel_name);
+      const address = toStr(fields.address);
+      const state = toStr(fields.state);
+      const zip_code = toStr(fields.zip_code);
+      const website = toStr(fields.website);
+      const phone = toStr(fields.phone);
+
+      // check existence
+      const checkSql = `SELECT COUNT(*) AS CNT FROM HOTEL WHERE HOTEL_NAME = :name`;
+      const checkRes = await db.execute(
+        checkSql,
+        { name: hotel_name },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+      const exists = Number(checkRes.rows?.[0]?.CNT || 0) > 0;
+
+      if (exists) {
+        return res.status(400).render("dashboard/add-hotel.ejs", {
+          title: "Add Hotel",
+          user: userInfo,
+          error: "Hotel with this name already exists",
+        });
+      }
+
+      // call stored procedure
+      const plsql = `
+        BEGIN
+          CREATE_HOTEL(:hotel_name, :address, :state, :zip_code, :website, :phone);
+        END;`;
+      await db.execute(
+        plsql,
+        { hotel_name, address, state, zip_code, website, phone },
+        { autoCommit: true }
+      );
+
+      return res.status(200).redirect("/hotel");
+    } catch (error) {
+      return res.status(500).render("dashboard/error.ejs", {
+        status: 500,
+        title: "Error",
+        message: "Internal server error",
+        error,
+      });
+    }
+  };
+
+  registerRoomsToHotel = async (req, res) => {
+    const { hotel_id } = req.params;
+    const form = new formidable.IncomingForm({ multiples: false });
+
+    try {
+      const { fields } = await new Promise((resolve, reject) => {
+        form.parse(req, (err, fields) =>
+          err ? reject(err) : resolve({ fields })
+        );
+      });
+
+      const totalSmallRooms = Number.parseInt(toStr(fields.t_s_room));
+      const totalMediumRooms = Number.parseInt(toStr(fields.t_m_room));
+      const totalLargeRooms = Number.parseInt(toStr(fields.t_l_room));
+      const availableSmallRooms = Number.parseInt(toStr(fields.a_s_room));
+      const availableMediumRooms = Number.parseInt(toStr(fields.a_m_room));
+      const availableLargeRooms = Number.parseInt(toStr(fields.a_l_room));
+
+      const plsql = `
+        BEGIN
+          CREATE_HOTEL_ROOM(
+            :hotel_id, :t_s, :t_m, :t_l, :a_s, :a_m, :a_l
+          );
+        END;`;
+      await db.execute(
+        plsql,
+        {
+          hotel_id: Number(hotel_id),
+          t_s: totalSmallRooms,
+          t_m: totalMediumRooms,
+          t_l: totalLargeRooms,
+          a_s: availableSmallRooms,
+          a_m: availableMediumRooms,
+          a_l: availableLargeRooms,
+        },
+        { autoCommit: true }
+      );
+
+      return res.status(200).redirect(`/view-rooms/${hotel_id}`);
+    } catch (error) {
+      return res.status(500).render("dashboard/error.ejs", {
+        status: 500,
+        title: "Error",
+        message: "Internal server error",
+        error,
+      });
+    }
+  };
+
+  updateHotelRooms = async (req, res) => {
+    const { hotel_id } = req.params;
+    const form = new formidable.IncomingForm({ multiples: false });
+
+    try {
+      const { fields } = await new Promise((resolve, reject) => {
+        form.parse(req, (err, fields) =>
+          err ? reject(err) : resolve({ fields })
+        );
+      });
+
+      const totalSmallRooms = Number.parseInt(toStr(fields.t_small_hall_room));
+      const totalMediumRooms = Number.parseInt(
+        toStr(fields.t_medium_hall_room)
+      );
+      const totalLargeRooms = Number.parseInt(toStr(fields.t_large_hall_room));
+      const availableSmallRooms = Number.parseInt(
+        toStr(fields.a_small_hall_room)
+      );
+      const availableMediumRooms = Number.parseInt(
+        toStr(fields.a_medium_hall_room)
+      );
+      const availableLargeRooms = Number.parseInt(
+        toStr(fields.a_large_hall_room)
+      );
+
+      // one anonymous block with 3 calls
+      const plsql = `
+        BEGIN
+          UPDATE_HOTEL_ROOM(:hid, 'small_hall',  :t_s, :a_s);
+          UPDATE_HOTEL_ROOM(:hid, 'medium_hall', :t_m, :a_m);
+          UPDATE_HOTEL_ROOM(:hid, 'large_hall',  :t_l, :a_l);
+        END;`;
+      await db.execute(
+        plsql,
+        {
+          hid: Number(hotel_id),
+          t_s: totalSmallRooms,
+          a_s: availableSmallRooms,
+          t_m: totalMediumRooms,
+          a_m: availableMediumRooms,
+          t_l: totalLargeRooms,
+          a_l: availableLargeRooms,
+        },
+        { autoCommit: true }
+      );
+
+      return res.status(200).redirect(`/view-rooms/${hotel_id}`);
+    } catch (error) {
+      return res.status(500).render("dashboard/error.ejs", {
+        status: 500,
+        title: "Error",
+        message: "Internal server error",
+        error,
+      });
+    }
+  };
+
+  // Client Controllers ->
+
+  eventsPage = async (req, res) => {
+    const { userInfo } = req;
+    const sql = `SELECT * FROM EVENT_RESERVATION WHERE GUEST_ID = :id`;
+    const { rows } = await db.execute(
+      sql,
+      { id: Number(userInfo.id) },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.status(200).render("dashboard/events.ejs", {
+      title: "Events",
+      user: userInfo,
+      events: rows,
+      error: "",
+    });
+  };
+
+  reserveEventPage = async (req, res) => {
+    const { userInfo } = req;
+
+    try {
+      const evSql = `SELECT * FROM EVENT_TYPE`;
+      const { rows: eventTypesData } = await db.execute(
+        evSql,
+        {},
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      const hSql = `SELECT * FROM HOTEL`;
+      const { rows: hotelsData } = await db.execute(
+        hSql,
+        {},
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      // If this is a table function in Oracle:
+      const roomsSql = `SELECT * FROM TABLE(GET_AVAILABLE_ROOMS_WITH_TYPE())`;
+      const { rows: availableRoomsData } = await db.execute(
+        roomsSql,
+        {},
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      res.status(200).render("dashboard/reserve-event.ejs", {
+        title: "Reserve Event",
+        user: userInfo,
+        eventTypes: eventTypesData,
+        hotels: hotelsData,
+        rooms: availableRoomsData,
+        error: "",
+      });
+    } catch (error) {
+      console.error("Error fetching data for reserve event page:", error);
+      res.status(500).render("dashboard/error.ejs", {
+        status: 500,
+        title: "Error",
+        message: "Internal server error",
+        error,
+      });
+    }
+  };
+
+  reserveEventRegister = async (req, res) => {
+    const { userInfo } = req;
+    const form = new formidable.IncomingForm({ multiples: false });
+
+    try {
+      const { fields } = await new Promise((resolve, reject) => {
+        form.parse(req, (err, fields) =>
+          err ? reject(err) : resolve({ fields })
+        );
+      });
+
+      const event_type = Number.parseInt(toStr(fields.event_type));
+      const hotel = Number.parseInt(toStr(fields.hotel));
+      const room = Number.parseInt(toStr(fields.room));
+      const start_date = toStr(fields.start_date); // let PL/SQL handle to_date
+      const end_date = toStr(fields.end_date);
+      const room_quantity = Number.parseInt(toStr(fields.room_quantity));
+      const no_of_people = Number.parseInt(toStr(fields.no_of_people));
+      const userId = Number(userInfo.id);
+
+      const plsql = `
+        BEGIN
+          INSERT_EVENT_RESERVATION(
+            :p_guest_id,
+            :p_hotel_id,
+            :p_event_type_id,
+            :p_room_id,
+            :p_start_date,
+            :p_end_date,
+            :p_room_qty,
+            :p_discount,       -- was 0
+            SYSDATE,           -- Oracle current timestamp
+            :p_num_people,
+            :p_status          -- was 1
+          );
+        END;`;
+      await db.execute(
+        plsql,
+        {
+          p_guest_id: userId,
+          p_hotel_id: hotel,
+          p_event_type_id: event_type,
+          p_room_id: room,
+          p_start_date: start_date,
+          p_end_date: end_date,
+          p_room_qty: room_quantity,
+          p_discount: 0,
+          p_num_people: no_of_people,
+          p_status: 1,
+        },
+        { autoCommit: true }
+      );
+
+      return res.status(200).redirect("/events");
+    } catch (error) {
+      return res.status(500).render("dashboard/error.ejs", {
+        status: 500,
+        title: "Error",
+        message: "Internal server error",
+        error,
+      });
+    }
+  };
+
+  eventRoomsPage = async (req, res) => {
+    const { userInfo } = req;
+    const { event_id } = req.params;
+
+    try {
+      const sql = `SELECT * FROM TABLE(GET_EVENT_ROOMS(:id))`;
+      const { rows } = await db.execute(
+        sql,
+        { id: Number(event_id) },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      res.status(200).render("dashboard/event-rooms.ejs", {
+        title: "Event Rooms",
+        user: userInfo,
+        eventId: event_id,
+        rooms: rows,
+      });
+    } catch (error) {
+      console.error("Error fetching event rooms:", error);
+      res.status(500).render("dashboard/error.ejs", {
+        status: 500,
+        title: "Error",
+        message: "Internal server error",
+        error,
+      });
+    }
+  };
+
+  addRoomsPage = async (req, res) => {
+    const { userInfo } = req;
+    const { event_id } = req.params;
+
+    try {
+      res.status(200).render("dashboard/add-event-rooms.ejs", {
+        title: "Add Rooms",
+        user: userInfo,
+        eventId: event_id,
+        error: "",
+      });
+    } catch (error) {
+      console.error("Error fetching event:", error);
+      res.status(500).render("dashboard/error.ejs", {
+        status: 500,
+        title: "Error",
+        message: "Internal server error",
+        error,
+      });
+    }
+  };
+
+  addExtraRoom = async (req, res) => {
+    const { event_id } = req.params;
+    const form = new formidable.IncomingForm({ multiples: false });
+
+    try {
+      const { fields } = await new Promise((resolve, reject) => {
+        form.parse(req, (err, fields) =>
+          err ? reject(err) : resolve({ fields })
+        );
+      });
+
+      const extraRoom = Number.parseInt(toStr(fields.extra_room));
+      const eventId = Number.parseInt(event_id);
+
+      // If this is a function in Oracle returning scalar, you can SELECT INTO, but simpler: wrap call in PL/SQL block
+      const plsql = `BEGIN ADD_EXTRA_ROOM_TO_EVENT_RESERVATION(:event_id, :extra); END;`;
+      await db.execute(
+        plsql,
+        { event_id: eventId, extra: extraRoom },
+        { autoCommit: true }
+      );
+
+      return res.status(200).redirect(`/event-rooms/${eventId}`);
+    } catch (error) {
+      console.error("Error adding extra room:", error);
+      res.status(500).render("dashboard/error.ejs", {
+        status: 500,
+        title: "Error",
+        message: "Internal server error",
+        error,
+      });
+    }
+  };
 }
 
 module.exports = new DashboardController();
