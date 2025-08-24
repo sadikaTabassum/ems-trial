@@ -2,136 +2,140 @@
 %>
 
 <section class="h-lvh">
-  <h2 class="text-2xl mb-4 px-12">Your Events</h2>
+  <h2 class="text-2xl font-bold mb-4 px-12 text-gray-800">Your Events</h2>
+
   <div class="flex flex-col">
     <div class="overflow-x-auto sm:mx-0.5 lg:mx-0.5">
       <div class="py-2 inline-block min-w-full sm:px-6 lg:px-8">
         <div class="overflow-hidden shadow-lg rounded-xl">
-          <table class="min-w-full table-auto">
-            <thead class="border-b">
+          <table class="min-w-full table-auto border border-gray-200 bg-white">
+            <thead class="bg-gray-100 border-b">
               <tr>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-gray-800 px-6 py-4 text-left"
                 >
                   #
                 </th>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-gray-800 px-6 py-4 text-left"
                 >
                   Event ID
                 </th>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-gray-800 px-6 py-4 text-left"
                 >
-                  Hotel ID
+                  Hotel
                 </th>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-gray-800 px-6 py-4 text-left"
                 >
                   Start Date
                 </th>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-gray-800 px-6 py-4 text-left"
                 >
                   End Date
                 </th>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-gray-800 px-6 py-4 text-left"
                 >
-                  Room Quantity
+                  Room Qty
                 </th>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-gray-800 px-6 py-4 text-left"
                 >
                   Room Invoice
                 </th>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-gray-800 px-6 py-4 text-left"
                 >
-                  Number of People
+                  People
                 </th>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-gray-800 px-6 py-4 text-left"
                 >
                   Status
+                </th>
+                <th
+                  class="text-sm font-semibold text-gray-800 px-6 py-4 text-left"
+                >
+                  Action
                 </th>
               </tr>
             </thead>
             <tbody>
-              <% for(let event of events) { %>
-              <tr class="border-b">
-                <td
-                  class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-                >
-                  <%= event.event_reservation_id %>
-                </td>
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <%= event.event_id %>
-                </td>
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <%= event.hotel_id %>
-                </td>
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <%= event.start_date.toLocaleDateString('en-GB', { day:
-                  '2-digit', month: 'long', year: 'numeric', weekday: 'long' })
-                  %>
-                </td>
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <%= event.end_date.toLocaleDateString('en-GB', { day:
-                  '2-digit', month: 'long', year: 'numeric', weekday: 'long' })
-                  %>
+              <% if (events && events.length > 0) { %> <% events.forEach((event,
+              index) => { %>
+              <tr class="border-b hover:bg-gray-50 transition">
+                <!-- Index -->
+                <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                  <%= index + 1 %>
                 </td>
 
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <%= event.room_quantity %>
-                </td>
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <%= event.room_invoice %>
-                </td>
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <%= event.no_of_people %>
-                </td>
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <% if (event.status === 1) { %> Reserved <% } else if
-                  (event.status === 2) { %> Cancelled <% } else if (event.status
-                  === 3) { %> Finished <% } %>
+                <!-- Event ID -->
+                <td class="px-6 py-4 text-sm text-gray-700">
+                  <%= event.EVENT_ID %>
                 </td>
 
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <button
-                    class="text-sm hover:bg-lime-700 hover:text-white px-2 border-2 border-lime-700 py-1 rounded-md bg-gray-100 text-lime-700"
+                <!-- Hotel Name or ID -->
+                <td class="px-6 py-4 text-sm text-gray-700">
+                  <%= event.HOTEL_NAME || event.HOTEL_ID %>
+                </td>
+
+                <!-- Start Date -->
+                <td class="px-6 py-4 text-sm text-gray-700">
+                  <%= event.START_DATE %>
+                </td>
+
+                <!-- End Date -->
+                <td class="px-6 py-4 text-sm text-gray-700">
+                  <%= event.END_DATE %>
+                </td>
+
+                <!-- Room Quantity -->
+                <td class="px-6 py-4 text-sm text-gray-700">
+                  <%= event.ROOM_QUANTITY %>
+                </td>
+
+                <!-- Room Invoice -->
+                <td class="px-6 py-4 text-sm text-gray-700">
+                  $<%= event.ROOM_INVOICE %>
+                </td>
+
+                <!-- Number of People -->
+                <td class="px-6 py-4 text-sm text-gray-700">
+                  <%= event.NO_OF_PEOPLE %>
+                </td>
+
+                <!-- Status -->
+                <td class="px-6 py-4 text-sm">
+                  <% if (event.STATUS === 'Confirmed') { %>
+                  <span class="text-green-600 font-semibold">Confirmed</span>
+                  <% } else if (event.STATUS === 'Pending') { %>
+                  <span class="text-yellow-500 font-semibold">Pending</span>
+                  <% } else { %>
+                  <span class="text-red-500 font-semibold">Cancelled</span>
+                  <% } %>
+                </td>
+
+                <!-- View Rooms -->
+                <td class="px-6 py-4 text-sm">
+                  <a
+                    href="/event-rooms/<%= event.EVENT_ID %>"
+                    class="px-3 py-1 border border-lime-700 rounded-md bg-gray-100 text-lime-700 hover:bg-lime-700 hover:text-white transition"
                   >
-                    <a href="/event-rooms/<%= event.event_id %>">
-                      View Rooms
-                    </a>
-                  </button>
+                    View Rooms
+                  </a>
+                </td>
+              </tr>
+              <% }) %> <% } else { %>
+              <!-- Empty State -->
+              <tr>
+                <td
+                  colspan="10"
+                  class="px-6 py-6 text-center text-gray-500 font-medium"
+                >
+                  No events reserved yet.
                 </td>
               </tr>
               <% } %>
@@ -140,12 +144,15 @@
         </div>
       </div>
     </div>
-    <div class="mx-auto">
-      <button
-        class="text-sm hover:bg-lime-700 mt-6 hover:text-white px-3 border-2 border-lime-700 py-2 rounded-md bg-gray-100 text-lime-700"
+
+    <!-- Reserve Event Button -->
+    <div class="mx-auto mt-6">
+      <a
+        href="/reserve-event"
+        class="text-sm px-4 py-2 border-2 border-lime-700 rounded-md bg-gray-100 text-lime-700 hover:bg-lime-700 hover:text-white transition"
       >
-        <a href="/reserve-event"> Reserve Event &rarr; </a>
-      </button>
+        Reserve Event &rarr;
+      </a>
     </div>
   </div>
 </section>

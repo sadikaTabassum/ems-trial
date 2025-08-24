@@ -1,0 +1,91 @@
+<%- include('../partials/header.ejs') %> <%- include('../partials/navbar.ejs')
+%>
+
+<section class="h-lvh">
+  <h2 class="text-2xl mb-4 px-12 font-bold text-black">Update Guest</h2>
+
+  <div class="flex flex-col items-center px-6">
+    <div class="w-full bg-white rounded-lg shadow border sm:max-w-xl">
+      <div class="p-6 space-y-6">
+        <form action="/update-guest" method="post" class="space-y-4">
+          <!-- Always send the user id (controller reads this) -->
+          <input
+            type="hidden"
+            name="user_id"
+            value="<%= userRow && userRow.USER_ID %>"
+          />
+
+          <!-- Email -->
+          <div>
+            <label
+              for="email"
+              class="block mb-2 text-sm font-medium text-gray-900"
+              >Email</label
+            >
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value="<%= userRow && userRow.EMAIL ? userRow.EMAIL : '' %>"
+              required
+              class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg block w-full p-2.5"
+            />
+          </div>
+
+          <!-- Image URL -->
+          <div>
+            <label
+              for="img_url"
+              class="block mb-2 text-sm font-medium text-gray-900"
+              >Image URL (optional)</label
+            >
+            <input
+              type="text"
+              id="img_url"
+              name="img_url"
+              value="<%= (userRow && userRow.IMG_URL) ? userRow.IMG_URL : '' %>"
+              placeholder="https://example.com/avatar.png"
+              class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg block w-full p-2.5"
+            />
+
+            <!-- Preview (works for absolute URLs and file names in /assets/images) -->
+            <div class="mt-3">
+              <span class="text-xs text-gray-500">Preview</span>
+              <img
+                id="avatarPreview"
+                src="<%= (userRow && userRow.IMG_URL)
+                      ? (userRow.IMG_URL.startsWith('http')
+                          ? userRow.IMG_URL
+                          : ('/assets/images/' + userRow.IMG_URL))
+                      : '/eventms.png' %>"
+                alt="avatar"
+                class="mt-1 w-16 h-16 rounded-full object-cover border"
+                onerror="this.src='/eventms.png'"
+              />
+            </div>
+          </div>
+
+          <% if (error) { %>
+          <p class="text-xs text-red-600"><%= error %></p>
+          <% } %>
+
+          <div class="flex items-center gap-3 pt-2">
+            <a
+              href="/guests"
+              class="inline-block text-sm px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-100"
+              >Cancel</a
+            >
+            <button
+              type="submit"
+              class="inline-block text-sm px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer.ejs') %>

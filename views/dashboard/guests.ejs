@@ -2,93 +2,120 @@
 %>
 
 <section class="h-lvh">
-  <h2 class="text-2xl mb-4 px-12">Our Guests</h2>
+  <h2 class="text-2xl mb-4 px-12 font-bold text-black">Our Guests</h2>
+
   <div class="flex flex-col">
     <div class="overflow-x-auto sm:mx-0.5 lg:mx-0.5">
       <div class="py-2 inline-block min-w-full sm:px-6 lg:px-8">
         <div class="overflow-hidden shadow-lg rounded-xl">
-          <table class="min-w-full table-auto">
-            <thead class="border-b">
+          <table class="min-w-full table-auto border border-gray-200 bg-white">
+            <thead class="border-b bg-gray-100">
               <tr>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-black px-6 py-4 text-left"
                 >
                   #
                 </th>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-black px-6 py-4 text-left"
                 >
                   Guest
                 </th>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-black px-6 py-4 text-left"
                 >
                   Email
                 </th>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-black px-6 py-4 text-left"
                 >
                   Edit
                 </th>
                 <th
-                  scope="col"
-                  class="text-sm font-medium text-gray-900 px-6 py-4 text-left"
+                  class="text-sm font-semibold text-black px-6 py-4 text-left"
                 >
                   Delete
                 </th>
               </tr>
             </thead>
+
             <tbody>
-              <% for(let guest of guests) { %>
-              <tr class="border-b">
+              <% if (guests && guests.length) { %> <%
+              guests.forEach(function(guest, idx) { %>
+              <tr class="border-b hover:bg-gray-50">
+                <!-- Row # -->
                 <td
-                  class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                  class="px-6 py-4 whitespace-nowrap text-sm font-medium text-black"
                 >
-                  <%= guest.user_id %>
+                  <%= idx + 1 %>
                 </td>
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <div
-                    class="flex text-sm rounded-full md:me-0 focus:ring-4 focus:ring-gray-300"
-                    id="user-menu-button"
-                    aria-expanded="false"
-                    data-dropdown-toggle="user-dropdown"
-                    data-dropdown-placement="bottom"
-                  >
+
+                <!-- Guest: avatar (if IMG_URL) + name -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-black">
+                  <div class="flex items-center gap-3">
+                    <% if (guest.IMG_URL) { %>
                     <img
-                      class="w-8 h-8 rounded-full"
-                      src="../assets/images/<%= guest.img_url %>"
-                      alt="user photo"
+                      class="w-8 h-8 rounded-full object-cover"
+                      src="/assets/images/<%= guest.IMG_URL %>"
+                      alt="avatar"
                     />
+                    <% } else { %>
+                    <span
+                      class="w-8 h-8 rounded-full bg-gray-200 text-gray-700 grid place-items-center text-xs font-semibold"
+                    >
+                      <%= (guest.FULL_NAME || guest.USERNAME || ('U' +
+                      guest.USER_ID)).toString().trim().charAt(0) %>
+                    </span>
+                    <% } %>
+                    <span>
+                      <%= guest.FULL_NAME || guest.USERNAME || ('User #' +
+                      guest.USER_ID) %>
+                    </span>
                   </div>
                 </td>
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <%= guest.email %>
+
+                <!-- Email -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-black">
+                  <%= guest.EMAIL || '' %>
                 </td>
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <button
-                    class="text-sm hover:bg-yellow-600 hover:text-white px-2 border-2 border-yellow-600 py-1 rounded-md bg-gray-100 text-yellow-600"
+
+                <!-- Edit -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-black">
+                  <a
+                    href="/update-guest?id=<%= guest.USER_ID %>"
+                    class="inline-block text-sm hover:bg-amber-600 hover:text-white px-3 border-2 border-amber-600 py-1.5 rounded-md bg-white text-amber-700"
+                    >Edit</a
                   >
-                    <a href="/edit-guest/<%= guest.guest_id %>"> Edit </a>
-                  </button>
                 </td>
-                <td
-                  class="text-sm text-gray-900 font-light px-6 py-4 whitespace-nowrap"
-                >
-                  <button
-                    class="text-sm hover:bg-rose-700 hover:text-white px-2 border-2 border-rose-700 py-1 rounded-md bg-gray-100 text-rose-700"
+
+                <!-- Delete (optional: wire to your actual route if you have one) -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-black">
+                  <form
+                    action="/delete-guest"
+                    method="post"
+                    onsubmit="return confirm('Delete this guest?')"
                   >
-                    <a href="/delete-guest/<%= guest.guest_id %>"> Delete </a>
-                  </button>
+                    <input
+                      type="hidden"
+                      name="id"
+                      value="<%= guest.USER_ID %>"
+                    />
+                    <button
+                      type="submit"
+                      class="text-sm hover:bg-rose-700 hover:text-white px-3 border-2 border-rose-600 py-1.5 rounded-md bg-white text-rose-700"
+                    >
+                      Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              <% }) %> <% } else { %>
+              <tr>
+                <td
+                  colspan="5"
+                  class="px-6 py-6 text-center text-gray-600 font-medium"
+                >
+                  No guests found.
                 </td>
               </tr>
               <% } %>
