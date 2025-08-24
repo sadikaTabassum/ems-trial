@@ -72,20 +72,23 @@ router.post(
   dashboardController.reserveEventRegister
 );
 
+// View rooms for a reservation
 router.get(
-  "/event-rooms/:event_id",
+  "/event-rooms/:reservation_id",
   authMiddleware,
   dashboardController.eventRoomsPage
 );
 
+// Show add-room form
 router.get(
-  "/event-rooms/:event_id/add-room",
+  "/event-rooms/:reservation_id/add-room",
   authMiddleware,
   dashboardController.addRoomsPage
 );
 
+// Submit add-room
 router.post(
-  "/add-room/:event_id",
+  "/add-room/:reservation_id",
   authMiddleware,
   dashboardController.addExtraRoom
 );

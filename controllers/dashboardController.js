@@ -762,60 +762,155 @@ class DashboardController {
   };
 
   // get_event_rooms returns SYS_REFCURSOR -> fetch via OUT bind
+  // GET /event-rooms/:reservation_id
   eventRoomsPage = async (req, res) => {
     const { userInfo } = req;
-    const { event_id } = req.params;
+    const { reservation_id } = req.params;
 
-    let conn;
     try {
-      const pool = await db.getPool();
-      conn = await pool.getConnection();
+      const id = Number(reservation_id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).render("dashboard/error.ejs", {
+          status: 400,
+          title: "Error",
+          message: "Invalid reservation id.",
+          error: new Error("Bad reservation id"),
+        });
+      }
 
-      const result = await conn.execute(
-        `BEGIN :rc := get_event_rooms(:id); END;`,
-        {
-          id: Number(event_id),
-          rc: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
-        },
+      // Pull everything we need from your schema (no refcursor function needed)
+      const { rows } = await db.execute(
+        `
+      SELECT
+        er.EVENT_RESERVATION_ID,
+        er.GUEST_ID,
+        er.HOTEL_ID,
+        h.HOTEL_NAME,
+        er.EVENT_ID,
+        et.EVENT_NAME,
+        er.START_DATE,
+        er.END_DATE,
+        er.ROOM_ID,
+        rt.ROOM_SIZE,
+        rt.ROOM_CAPACITY,
+        rt.ROOM_PRICE,
+        er.ROOM_QUANTITY,
+        er.ROOM_INVOICE,
+        er.NO_OF_PEOPLE,
+        er.STATUS,
+        ar.TOTAL_ROOM,
+        ar.AVAILABLE_ROOM
+      FROM EVENT_RESERVATION er
+      JOIN ROOM_TYPE rt
+        ON rt.ROOM_ID = er.ROOM_ID
+      JOIN HOTEL h
+        ON h.HOTEL_ID = er.HOTEL_ID
+      JOIN EVENT_TYPE et
+        ON et.EVENT_ID = er.EVENT_ID
+      LEFT JOIN AVAILABLE_ROOM_PER_HOTEL ar
+        ON ar.HOTEL_ID = er.HOTEL_ID
+       AND ar.ROOM_ID  = er.ROOM_ID
+      WHERE er.EVENT_RESERVATION_ID = :id
+      `,
+        { id },
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
-      const rs = result.outBinds.rc;
-      const rows = await rs.getRows(1000);
-      await rs.close();
 
-      res.status(200).render("dashboard/event-rooms.ejs", {
+      if (!rows?.length) {
+        return res.status(404).render("dashboard/error.ejs", {
+          status: 404,
+          title: "Not Found",
+          message: "Reservation not found.",
+          error: new Error("Reservation not found"),
+        });
+      }
+
+      const r = rows[0];
+
+      // Map Oracle column names to the exact keys your EJS already uses (lowercase):
+      const rooms = [
+        {
+          // EJS table fields:
+          room_size: r.ROOM_SIZE,
+          room_capacity: r.ROOM_CAPACITY,
+          room_price: r.ROOM_PRICE,
+          total_room: r.TOTAL_ROOM ?? 0,
+          available_room: r.AVAILABLE_ROOM ?? 0,
+
+          // Useful extras if you want to show later:
+          room_quantity: r.ROOM_QUANTITY,
+          room_invoice: r.ROOM_INVOICE,
+        },
+      ];
+
+      // Pass a compact reservation header for the page title, etc.
+      const reservationInfo = {
+        reservation_id: r.EVENT_RESERVATION_ID,
+        hotel_name: r.HOTEL_NAME,
+        event_name: r.EVENT_NAME,
+        start_date: r.START_DATE,
+        end_date: r.END_DATE,
+        status: r.STATUS, // 1/2/3 as per your schema
+      };
+
+      return res.status(200).render("dashboard/event-rooms.ejs", {
         title: "Event Rooms",
         user: userInfo,
-        eventId: event_id,
-        rooms: rows,
+        reservationId: id, // your EJS uses `reservationId`
+        rooms,
+        reservationInfo, // optional: for header if you want
+        error: "",
       });
     } catch (error) {
       console.error("eventRoomsPage error:", error);
-      res.status(500).render("dashboard/error.ejs", {
+      return res.status(500).render("dashboard/error.ejs", {
         status: 500,
         title: "Error",
         message: "Internal server error",
         error,
       });
-    } finally {
-      if (conn) await conn.close();
     }
   };
 
+  // GET /event-rooms/:reservation_id/add-room
   addRoomsPage = async (req, res) => {
     const { userInfo } = req;
-    const { event_id } = req.params;
+    const { reservation_id } = req.params;
 
     try {
-      res.status(200).render("dashboard/add-event-rooms.ejs", {
+      const id = Number(reservation_id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).render("dashboard/error.ejs", {
+          status: 400,
+          title: "Error",
+          message: "Invalid reservation id.",
+          error: new Error("Bad reservation id"),
+        });
+      }
+
+      // Optional: load a tiny summary to show on the form (not required)
+      const { rows } = await db.execute(
+        `
+      SELECT er.EVENT_RESERVATION_ID, h.HOTEL_NAME, rt.ROOM_SIZE, er.STATUS
+        FROM EVENT_RESERVATION er
+        JOIN HOTEL h ON h.HOTEL_ID = er.HOTEL_ID
+        JOIN ROOM_TYPE rt ON rt.ROOM_ID = er.ROOM_ID
+       WHERE er.EVENT_RESERVATION_ID = :id
+      `,
+        { id },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      return res.status(200).render("dashboard/add-event-rooms.ejs", {
         title: "Add Rooms",
         user: userInfo,
-        eventId: event_id,
+        reservationId: id,
+        reservationSummary: rows?.[0] || null,
         error: "",
       });
     } catch (error) {
       console.error("addRoomsPage error:", error);
-      res.status(500).render("dashboard/error.ejs", {
+      return res.status(500).render("dashboard/error.ejs", {
         status: 500,
         title: "Error",
         message: "Internal server error",
@@ -824,33 +919,111 @@ class DashboardController {
     }
   };
 
+  // POST /add-room/:reservation_id
+  // controllers/dashboardController.js (inside the class)
   addExtraRoom = async (req, res) => {
-    const { event_id } = req.params;
-    const form = new formidable.IncomingForm({ multiples: false });
-
     try {
-      const { fields } = await new Promise((resolve, reject) => {
-        form.parse(req, (err, fields) =>
-          err ? reject(err) : resolve({ fields })
-        );
-      });
+      // Use Express body parser instead of Formidable for this simple POST
+      // Make sure app.js has: app.use(express.urlencoded({ extended: false }))
+      const reservationId = Number(req.params.reservation_id);
+      const extraRoom = Number(req.body?.extra_room);
 
-      const extraRoom = Number.parseInt(toStr(fields.extra_room));
-      const eventId = Number.parseInt(event_id);
+      if (!Number.isFinite(reservationId)) {
+        return res.status(400).render("dashboard/error.ejs", {
+          status: 400,
+          title: "Error",
+          message: "Invalid reservation id.",
+          error: new Error("Bad reservation id"),
+        });
+      }
+      if (!Number.isFinite(extraRoom) || extraRoom <= 0) {
+        return res.status(400).render("dashboard/add-event-rooms.ejs", {
+          title: "Add Rooms",
+          user: req.userInfo,
+          reservationId,
+          error: "Please enter a positive number of rooms.",
+        });
+      }
 
-      await db.execute(
-        `BEGIN add_extra_room_to_event_reservation(:event_id, :extra); END;`,
-        { event_id: eventId, extra: extraRoom },
-        { autoCommit: true }
+      // Fast sanity/UX checks before calling the proc that locks rows
+      const { rows } = await db.execute(
+        `
+      SELECT
+        er.STATUS,
+        er.HOTEL_ID,
+        er.ROOM_ID,
+        NVL(ar.AVAILABLE_ROOM, 0) AS AVAILABLE_ROOM
+      FROM EVENT_RESERVATION er
+      LEFT JOIN AVAILABLE_ROOM_PER_HOTEL ar
+        ON ar.HOTEL_ID = er.HOTEL_ID
+       AND ar.ROOM_ID  = er.ROOM_ID
+      WHERE er.EVENT_RESERVATION_ID = :id
+      `,
+        { id: reservationId },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
 
-      return res.status(200).redirect(`/event-rooms/${eventId}`);
+      if (!rows?.length) {
+        return res.status(404).render("dashboard/error.ejs", {
+          status: 404,
+          title: "Not Found",
+          message: "Reservation not found.",
+          error: new Error("Reservation not found"),
+        });
+      }
+
+      const row = rows[0];
+
+      // 1=Reserved, 2=Cancelled, 3=Finished
+      if (Number(row.STATUS) !== 1) {
+        return res.status(400).render("dashboard/add-event-rooms.ejs", {
+          title: "Add Rooms",
+          user: req.userInfo,
+          reservationId,
+          error:
+            "You can only add rooms to a reservation in 'Reserved' status.",
+        });
+      }
+
+      if (Number(row.AVAILABLE_ROOM) < extraRoom) {
+        return res.status(400).render("dashboard/add-event-rooms.ejs", {
+          title: "Add Rooms",
+          user: req.userInfo,
+          reservationId,
+          error: `Only ${row.AVAILABLE_ROOM} room(s) are currently available.`,
+        });
+      }
+
+      // Call the procedure. Add a callTimeout to avoid hanging on DB row locks.
+      await db.execute(
+        `BEGIN add_extra_room_to_event_reservation(:p_event_reservation_id, :p_additional_rooms); END;`,
+        {
+          p_event_reservation_id: reservationId,
+          p_additional_rooms: extraRoom,
+        },
+        {
+          autoCommit: true,
+          callTimeout: 15000, // 15s safety; adjust as you like
+        }
+      );
+
+      return res.redirect(`/event-rooms/${reservationId}`);
     } catch (error) {
       console.error("addExtraRoom error:", error);
-      res.status(500).render("dashboard/error.ejs", {
+      const message = /ORA-20010/.test(error.message)
+        ? "Reservation is not in Reserved status."
+        : /ORA-20011/.test(error.message)
+        ? "Not enough available rooms for the requested addition."
+        : /ORA-20012/.test(error.message)
+        ? "Reservation or availability row not found."
+        : /DPI-1067|callTimeout/i.test(error.message)
+        ? "The request timed out while waiting on a database lock. Please try again."
+        : "Internal server error";
+
+      return res.status(500).render("dashboard/error.ejs", {
         status: 500,
         title: "Error",
-        message: "Internal server error",
+        message,
         error,
       });
     }
